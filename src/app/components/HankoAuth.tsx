@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { register, Hanko } from '@teamhanko/hanko-elements';
+import { useEffect, useState } from 'react';
+import { register } from '@teamhanko/hanko-elements';
+import { Hanko } from '@teamhanko/hanko-frontend-sdk';
 import { Alert } from '@mui/material';
 import { useRouter } from 'next/navigation';
 
@@ -12,34 +13,18 @@ export default function HankoAuth() {
     const [hanko, setHanko] = useState<Hanko>();
 
     useEffect(() => {
-        import("@teamhanko/hanko-elements").then(({ Hanko }) =>
-            setHanko(new Hanko(hankoApi))
-        );
+        register(hankoApi).catch((error) => { });
+        setHanko(new Hanko(hankoApi))
     }, []);
 
-    useEffect(() => {
-        register(hankoApi).catch((error) => {
-        });
-    }, []);
-
-    const redirectAfterLogin = useCallback(() => {
+    useEffect(() => (hanko?.onAuthFlowCompleted(async () => {
+        const user = await hanko.user.getCurrent();
+        await fetch("/api/permit", { method: "POST", body: JSON.stringify({ ...user }) });
         router.replace("/notes");
-        window.location.reload();
-    }, [router]);
-
-    useEffect(
-        () =>
-            hanko?.onAuthFlowCompleted(() => {
-                console.log("Auth flow completed");
-                redirectAfterLogin();
-            }),
-        [hanko, redirectAfterLogin]
-    );
+    })), [hanko, router]);
 
     useEffect(() => {
-        register(hankoApi).catch((error) => {
-            // handle error
-        });
+        register(hankoApi).catch((error) => { });
     }, []);
 
     return (

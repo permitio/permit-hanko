@@ -27,7 +27,6 @@ export default function RootLayout({
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Hankomit Notes
             </Typography>
-            <HankoLogout />
             <HankoProfile />
           </Toolbar>
         </AppBar>

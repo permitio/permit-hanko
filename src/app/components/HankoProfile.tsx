@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Box, Button, IconButton, Popover } from "@mui/material";
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { Hanko, register } from "@teamhanko/hanko-elements";
+import { register } from "@teamhanko/hanko-elements";
+import { Hanko } from "@teamhanko/hanko-frontend-sdk";
 import { useRouter } from "next/navigation";
 
 
@@ -19,6 +20,18 @@ export default function HankoProfile() {
         setAnchorEl(event.currentTarget);
     };
 
+    const handleUserChange = useCallback(async () => {
+        if (!hanko) return;
+        hanko.onAuthFlowCompleted(handleUserChange);
+        try {
+            const u = await hanko?.user.getCurrent();
+            setUser(u);
+        } catch (error) {
+            console.error("Error during getCurrent:", error);
+        }
+    }, [hanko]);
+
+
     const handleClose = () => {
         setAnchorEl(null);
     };
@@ -27,29 +40,19 @@ export default function HankoProfile() {
     const id = open ? 'simple-popover' : undefined;
 
     useEffect(() => {
-        (async () => {
-            const { Hanko } = await import("@teamhanko/hanko-elements");
-            setHanko(new Hanko(hankoApi));
-        })()
+        register(hankoApi).catch((error) => (console.error("Error during registration:", error)));
+        const h = new Hanko(hankoApi);
+        setHanko(h);
     }, []);
 
     useEffect(() => {
-        register(hankoApi).catch((error) => (console.error("Error during registration:", error)));
-        (async () => {
-            if (!hanko) return;
-            try {
-                const u = await hanko?.user.getCurrent();
-                setUser(u);
-            } catch (error) {
-                console.error("Error during getCurrent:", error);
-            }
-        })()
+        handleUserChange();
     }, [hanko]);
 
     const logout = async () => {
         try {
             await hanko?.user.logout();
-            router.push("/login");
+            router.push("/auth/login");
             router.refresh();
             setUser(undefined);
             return;
@@ -69,25 +72,27 @@ export default function HankoProfile() {
         >
             <AccountCircle />
         </IconButton>
-        <Popover
-            id={id}
-            open={open}
-            anchorEl={anchorEl}
-            onClose={handleClose}
-            anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-            }}
-            transformOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-            }}
-        >
-            <Box sx={{ p: 2, width: 360 }}>
-                <hanko-profile />
-                <Button onClick={logout} variant="contained">Logout</Button>
-            </Box>
-        </Popover>
+        {anchorEl &&
+            <Popover
+                id={id}
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}
+                transformOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}
+            >
+                <Box sx={{ p: 2, width: 360 }} display="flex" flexDirection="column" alignItems="center" justifyContent="center" gap={2}>
+                    <hanko-profile />
+                    <Button onClick={logout} variant="contained" sx={{ flex: 1 }}>Logout</Button>
+                </Box>
+            </Popover>
+        }
     </> || ''
     );
 }
