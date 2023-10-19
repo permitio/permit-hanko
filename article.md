@@ -4,6 +4,7 @@ For some applications, access control keeps the same for years.
 Login in username and passwords, then get permitted for operations by using access list and flat roles.
 The modern era of cloud application, and the fact that internet is a space where everything is public, makes this model obsolete.
 In a world where everyone can access everything, and passwords are cracked in minutes, we must to find new way to redfine access control.
+
 In this article, we will build a full stack application that demonstrate two of the new trends in access control: passkeys and fine-grained authorization.
 
 Let's start with the details of what each of these terms mean.
