@@ -74,10 +74,10 @@ At this point, the application will fail to run as we need to setup the Hanko an
 
 TBD add screenshot of the error
 
-Let's do it in the next sections.
+Let's set up the Hanko account so we can login to the application.
 
 ## Use Hanko for Passkeys Authentication
-To use Hanko for passkeys authentication, you can either run it locally as a service or use the cloud service.
+To use Hanko for passkeys authentication, you can either run it locally in your environment or use the cloud service.
 In this article, we will use the cloud service as it is easier to setup and use.
 
 1. Create a free account on Hanko website, then create a new organization, give it the name you want.
@@ -92,7 +92,6 @@ In this article, we will use the cloud service as it is easier to setup and use.
     ```
 
 Now, when we run the application again, we can see that the error is gone and we can see the login page.
-_At this point, do not login yet, as we need to set the Permit service first._
 
 TBD add screenshot
 
@@ -113,7 +112,7 @@ TBD add code sample from the file
 Now, that we done with the authentication it is time to setup permissions for note taking.
 For the first phase, we will use simple roles to determine the actions that the user can do.
 
-In the `/app/api/notes/route.ts`, you'll find three functions, `GET`, `POST`, and `DELETE` - responsible for the logic of getting, creating, and deleting notes, respectively.
+In the `/app/api/notes/route.ts`, you'll find four functions, `GET`, `POST`, `PUT`, and `DELETE` - responsible for the logic of getting, creating, updating, and deleting notes, respectively.
 
 In the traditional world, developers used to check the user role in the application code, and decide if the user can do the operation or not.
 For example, in our `GET` function, they used code that looks like this:
@@ -124,10 +123,14 @@ TBD add simple `if` code sample
 This code might be simple, but it is not scalable.
 If we want to change the role permissions, we need to change the code and redeploy the application.
 Also, if we would like to make this "flat" permission more gine-grained, we need to add more code and make it more complex.
-If you'll look in our application, you'll find the following code in the `GET` function:
+
+If you'd look at the `route.ts` file, you'll not find any of those checks.
+Instead, we are using the generic `permit.check` function that is implemented in the `middleware.ts` file.
 ```typescript
 TBD add code sample from the file
 ```
+
+_At this point, since we haven't configured the Permit SDK key in the app, every user can do every operation. Setting up Permit.io, will fix it._
 
 This code, is a generic `permit.check` function that check the permissions configured out of the application using three factors:
 - `User` - the entity that try to do the operation (in our case, the user that authenticated with Hanko).
@@ -135,7 +138,14 @@ This code, is a generic `permit.check` function that check the permissions confi
 - `Resource` - the entity that the user try to do the operation on (in our case, the note).
 
 Now, we can simply configure this permissions in Permit.io, and change them for our needs without changing the application code.
-TBD add instruction of simple RBAC configuration in Permit.io
+1. Create a free account on Permit.io website, then create a new organization, give it the name you want.
+    TBD add screenshot
+2. In the left sidebar, click on `Policy` and then go to the `Roles` tab, create the following roles.
+    TBD add screenshot
+3. In the `Resources` tab, create a new resource called `notes`, with the following four actions and owner attribute.
+    TBD add screenshot
+4. Back in the `Policy` tab, let's allow all users to `GET` and `POST` notes, and only users with the `admin` role to `PUT`, and `DELETE` notes.
+    TBD add screenshot
 
 At this point, we have configured everything and we need to run the application with permissions in-place, let try it out.
 1. To use Permit.io in our application, we need first to get the API key from Permit.io dashboard.
@@ -152,10 +162,11 @@ Now, as we configured the permissions in Permit.io and the app, it is time to si
 In the `localhost:3000` login with a user of your choose, make sure you configured the right passkey for your choose.
 In the first screen, let's try to create a note - and we can see this note is now in the list.
 TBD add screenshot
+In Permit.io dashboard, let's go to the `Audit` tab in the left sidebar, and we can see that the `POST` action is logged.
+Opening this audit log row, we can see detailed information about this decision, and that the decision happened because this user has the `user` role.
+TBD add screenshot
 
-The reason why we we're able to create a note, is because we configured the `POST` action to be allowed for all users with the role `user`.
-We can see the code in the `/app/api/users/route.ts` file that responsible to sync our user with `user` role to Permit.io.
-
+The way this user got the `user` role is a sync function we created for every user in our system as the least privileged role.
 ```typescript
 TBD add code sample from the file make sure there are comments in the code
 ```
@@ -163,7 +174,7 @@ TBD add code sample from the file make sure there are comments in the code
 Now, let's try to delete the note - and we can see that the delete button is returning an error
 TBD add screenshot
 
-To change this situation, let's go to the Permit.io dashboard, and add an admin role to our user.
+To change this situation, let's go to the Permit.io dashboard, and add an admin role to our user
 TBD add screenshot
 
 Returning to the application, we can see that the delete button is now working.
@@ -178,7 +189,12 @@ _Note: For this section to run properly, you need to run the Permit.io PDP as a 
 As we stated before, our delete permissions in the application, suppose to be more fine-grained and allow delete only for the user that created the note.
 To acheive that, we can easily configure this policy in Permit.io and see how it takes an immidiate effect in our application.
 
-TBD instruction of configuring ABAC `isOwner` policy in Permit.io
+1. In the `Policy` page in Permit.io dashboard, go to `ABAC Rules` tab, and enable the ABAC option
+    TBD add screenshot
+2. Create a new `Resource Set` rule - this set will create a condition that will be true only if the user is the owner of the note.
+    TBD add screenshot
+3. Back to the `Policy` tab, let's create a new policy that will allow `UPDATE`, and `DELETE` only for the owner of the note. Mind that we leave the priviledged `admin` role to do all actions.
+    TBD add screenshot
 
 At this point, let's add another user to the application. Let's logout with the current user and signup with a new user.
 Let's now try to remove the note that we created with the first user - and we can see that the delete button is returning an error.
