@@ -18,7 +18,7 @@
     "@teamhanko/hanko-elements": "^0.8.3",
     "@teamhanko/hanko-frontend-sdk": "^0.8.4",
     "jose": "^4.14.6",
-    "next": "latest",
+    "next": "13.5.6",
     "permitio": "^2.1.0",
     "react": "latest",
     "react-dom": "latest"
